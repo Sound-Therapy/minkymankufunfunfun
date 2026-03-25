@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>McKayla's Poop Roadmap v1.1.6 💩</title>
+    <title>McKayla's Poop Roadmap v1.1.7 💩</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: -apple-system, sans-serif; background-color: #fff5f7; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
+        body { font-family: -apple-system, sans-serif; background-color: #fff5f7; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; -webkit-font-smoothing: antialiased; }
         .app-container { width: 90%; max-width: 400px; background: white; padding: 40px 20px; border-radius: 40px; box-shadow: 0 20px 40px rgba(255,149,180,0.15); text-align: center; margin-top: 20px; }
-        .score-value { font-size: 5.5rem; font-weight: 900; color: #8b5e3c; margin: 10px 0; }
-        .btn { width: 100%; padding: 20px; margin: 12px 0; border: none; border-radius: 20px; font-size: 1.1rem; font-weight: 700; cursor: pointer; }
-        .btn-poop { background: linear-gradient(135deg, #ff748d, #ff9cae); color: white; }
+        .score-value { font-size: 5.5rem; font-weight: 900; color: #8b5e3c; margin: 10px 0; line-height: 1; }
+        .btn { width: 100%; padding: 20px; margin: 12px 0; border: none; border-radius: 20px; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .btn-poop { background: linear-gradient(135deg, #ff748d, #ff9cae); color: white; box-shadow: 0 10px 20px rgba(255, 116, 141, 0.3); }
         .btn-history { background-color: #fcfcfc; color: #ff748d; border: 2px solid #ffedf1; }
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(5px); }
         .modal-content { background: white; padding: 40px 25px; border-radius: 35px; width: 80%; max-width: 300px; text-align: center; }
@@ -36,7 +36,7 @@
     <div id="history-section" style="display:none; margin-top:20px; width:100%;">
         <canvas id="growthChart"></canvas>
     </div>
-    <div class="version-info">v1.1.6 | Score Logic Fixed</div>
+    <div class="version-info">v1.1.7 | No-Loop Fix</div>
 </div>
 
 <div id="missionModal" class="modal">
@@ -74,20 +74,20 @@
     let sessionPoints = 0;
     let chartInstance = null;
 
-    function loadData() {
-        db.ref('mckayla_data').on('value', (snapshot) => {
-            if (snapshot.exists()) { 
-                const data = snapshot.val();
-                state.score = data.score !== undefined ? data.score : 100;
-                state.didCheckIn = data.didCheckIn || false;
-                state.lastUpdateDay = data.lastUpdateDay || new Date().toDateString();
-                state.history = data.history || [];
-                checkDailyGap();
-            } else {
-                saveData(); // 초기 데이터 생성
-            }
-            document.getElementById('poop-score').innerText = state.score;
-        });
+    async function loadData() {
+        // on 대신 once를 써서 무한 루프 차단
+        const snapshot = await db.ref('mckayla_data').once('value');
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            state.score = (data.score === undefined || data.score < 0) ? 100 : data.score;
+            state.didCheckIn = data.didCheckIn || false;
+            state.lastUpdateDay = data.lastUpdateDay || new Date().toDateString();
+            state.history = data.history || [];
+            checkDailyGap();
+        } else {
+            saveData();
+        }
+        updateUI();
     }
 
     function checkDailyGap() {
@@ -97,7 +97,6 @@
             const diffDays = Math.ceil(Math.abs(new Date(today) - lastDate) / (1000 * 60 * 60 * 24));
             
             if (diffDays >= 1) {
-                // 어제 체크인 안했으면 30점 감점 (밀린 날짜만큼)
                 let penaltyStart = state.didCheckIn ? 1 : 0;
                 for(let i = penaltyStart; i < diffDays; i++) {
                     state.score -= 30;
@@ -113,10 +112,15 @@
 
     function saveData() {
         db.ref('mckayla_data').set(state);
+        updateUI();
+    }
+
+    function updateUI() {
+        document.getElementById('poop-score').innerText = state.score;
     }
 
     function startMission() {
-        if (state.didCheckIn) return alert("All done today! ✨");
+        if (state.didCheckIn) return alert("Already collected today! ✨");
         currentIdx = 0; sessionPoints = 0;
         updateModal();
         document.getElementById('missionModal').style.display = 'flex';
@@ -136,16 +140,10 @@
 
     function finishMission() {
         document.getElementById('missionModal').style.display = 'none';
-        
-        // 점수 합산 (감점 포함)
         state.score += sessionPoints;
         state.didCheckIn = true;
-        state.history.push({ 
-            date: new Date().toLocaleDateString('en-US', {month:'short', day:'numeric'}), 
-            score: state.score 
-        });
-        
-        saveData(); // 서버 저장
+        state.history.push({ date: new Date().toLocaleDateString('en-US', {month:'short', day:'numeric'}), score: state.score });
+        saveData();
         
         const msg = sessionPoints >= 0 ? `Yay! +${sessionPoints} points! 💩` : `Oh no! ${sessionPoints} points... 🥺`;
         setTimeout(() => alert(msg), 300);

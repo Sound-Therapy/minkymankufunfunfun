@@ -3,25 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>McKayla's Poop Roadmap 💩</title>
+    <title>McKayla's Poop Roadmap v1.1.0 💩</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
         body { font-family: 'Comic Sans MS', cursive, sans-serif; background-color: #fff0f6; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .app-container { width: 100%; max-width: 400px; background: white; padding: 30px; border-radius: 40px; box-shadow: 0 10px 25px rgba(255,105,180,0.2); text-align: center; border: 4px solid #ffdeeb; }
+        .app-container { width: 100%; max-width: 400px; background: white; padding: 30px; border-radius: 40px; box-shadow: 0 10px 25px rgba(255,105,180,0.2); text-align: center; border: 4px solid #ffdeeb; margin-bottom: 20px; }
         .header { color: #ff85a2; font-size: 1.2rem; margin-bottom: 10px; font-weight: bold; }
         .score-label { font-size: 1.5rem; color: #6b4e3d; }
         .score-value { font-size: 6rem; font-weight: 900; color: #a67c52; margin: 10px 0; text-shadow: 3px 3px #fce4ec; }
         .poop-emoji { font-size: 3rem; }
         .btn { width: 100%; padding: 20px; margin: 10px 0; border: none; border-radius: 25px; font-size: 1.2rem; font-weight: bold; cursor: pointer; transition: 0.3s; transform: scale(1); }
-        .btn:active { transform: scale(0.95); }
         .btn-poop { background: linear-gradient(135deg, #ff85a2, #ffb3c6); color: white; box-shadow: 0 5px 15px rgba(255,133,162,0.4); }
-        .btn-history { background-color: #f0f4f8; color: #888; font-size: 0.9rem; }
+        .btn-history { background-color: #f8f9fa; color: #ff85a2; border: 2px solid #ffdeeb; }
+        .chart-container { width: 100%; max-width: 400px; background: white; padding: 20px; border-radius: 30px; display: none; margin-top: 10px; border: 2px solid #ffdeeb; }
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(5px); }
         .modal-content { background: white; padding: 30px; border-radius: 35px; width: 85%; max-width: 320px; text-align: center; border: 5px solid #ff85a2; }
         .choice-btn { width: 45%; padding: 15px; border: none; border-radius: 20px; background: #ffe0e9; cursor: pointer; font-size: 1.1rem; font-weight: bold; color: #ff5c8a; }
-        .choice-btn:hover { background: #ff85a2; color: white; }
     </style>
 </head>
 <body>
@@ -32,7 +31,11 @@
     <div id="poop-score" class="score-value">0</div>
     
     <button class="btn btn-poop" onclick="startMission()">Collect Poop Points!</button>
-    <button class="btn btn-history" onclick="alert('Coming soon! Happy collecting!')">View My Growth</button>
+    <button class="btn btn-history" onclick="toggleHistory()">View My Growth 📈</button>
+
+    <div id="history-section" class="chart-container">
+        <canvas id="growthChart"></canvas>
+    </div>
 </div>
 
 <div id="missionModal" class="modal">
@@ -41,13 +44,12 @@
         <p id="question-display" style="font-size: 1.2rem; color: #555; min-height: 60px;"></p>
         <div style="display: flex; justify-content: space-around; margin-top: 20px;">
             <button class="choice-btn" onclick="handleChoice(true)">Yes! 🎉</button>
-            <button class="choice-btn" onclick="handleChoice(false)">Not yet</button>
+            <button class="choice-btn" onclick="handleChoice(false)" style="background: #f1f5f9; color: #64748b;">Not yet</button>
         </div>
     </div>
 </div>
 
 <script>
-    // --- 아버님의 Firebase 정보를 그대로 사용합니다 ---
     const firebaseConfig = {
         apiKey: "AIzaSyAoLonGkvQrPpNk5Rl8vJvR-eNg63xUPO4",
         authDomain: "road-to-the-victory-mason.firebaseapp.com",
@@ -62,13 +64,15 @@
     const db = firebase.database();
 
     let state = {
-        score: 0,
+        score: 100, // 시작 점수
         didCheckIn: false,
-        lastUpdate: ""
+        lastUpdateDay: new Date().toDateString(),
+        history: [{date: new Date().toLocaleDateString('en-US', {month:'short', day:'numeric'}), score: 100}]
     };
 
+    let chartInstance = null;
     let currentStep = 1;
-    let earnedThisSession = 0;
+    let sessionPoints = 0;
 
     const questions = {
         1: "Did you finish your Khan Academy Algebra today? 🔢",
@@ -80,16 +84,33 @@
         db.ref('mckayla_data').once('value').then((snapshot) => {
             if (snapshot.exists()) {
                 state = snapshot.val();
-                // 날짜가 바뀌었는지 체크
-                const today = new Date().toDateString();
-                if(state.lastUpdate !== today) {
-                    state.didCheckIn = false;
-                    state.lastUpdate = today;
-                    saveData();
-                }
+                checkDailyGap();
+            } else {
+                saveData();
             }
             updateUI();
         });
+    }
+
+    function checkDailyGap() {
+        const todayStr = new Date().toDateString();
+        if (todayStr !== state.lastUpdateDay) {
+            const lastDate = new Date(state.lastUpdateDay);
+            const diffDays = Math.ceil(Math.abs(new Date(todayStr) - lastDate) / (1000 * 60 * 60 * 24));
+            
+            // 어제 체크인을 안 했다면 하루당 30점 감점
+            if (diffDays >= 1) {
+                let penaltyStart = state.didCheckIn ? 1 : 0;
+                for(let i = penaltyStart; i < diffDays; i++) {
+                    state.score -= 30;
+                    let mDate = new Date(lastDate); mDate.setDate(lastDate.getDate() + i + 1);
+                    state.history.push({ date: mDate.toLocaleDateString('en-US', {month:'short', day:'numeric'}), score: state.score });
+                }
+            }
+            state.lastUpdateDay = todayStr;
+            state.didCheckIn = false;
+            saveData();
+        }
     }
 
     function saveData() {
@@ -97,34 +118,65 @@
     }
 
     function startMission() {
-        if (state.didCheckIn) return alert("You already got your poop points today! See you tomorrow! ✨");
-        currentStep = 1; earnedThisSession = 0;
+        if (state.didCheckIn) return alert("You already checked in today! See you tomorrow! ✨");
+        currentStep = 1; sessionPoints = 0;
         showQuestion();
         document.getElementById('missionModal').style.display = 'flex';
     }
 
     function showQuestion() {
-        let title = "Math Time! ✏️";
-        if (currentStep === 2) title = "Reading! 📚";
-        if (currentStep === 3) title = "Move it! 🏃‍♀️";
-        document.getElementById('modal-title').innerText = title;
+        const titles = { 1: "Math Time! ✏️", 2: "Reading! 📚", 3: "Move it! 🏃‍♀️" };
+        document.getElementById('modal-title').innerText = titles[currentStep];
         document.getElementById('question-display').innerText = questions[currentStep];
     }
 
     function handleChoice(isYes) {
-        if (isYes) earnedThisSession += 10; // 항목당 10점씩!
+        if (isYes) sessionPoints += 10;
+        else sessionPoints -= 10; // "아니오" 누르면 10점 차감
+        
         currentStep++;
-        if (currentStep > 3) finish();
+        if (currentStep > 3) finishSession();
         else showQuestion();
     }
 
-    function finish() {
-        state.score += earnedThisSession;
+    function finishSession() {
+        state.score += sessionPoints;
         state.didCheckIn = true;
+        state.history.push({ date: new Date().toLocaleDateString('en-US', {month:'short', day:'numeric'}), score: state.score });
         saveData();
         updateUI();
         document.getElementById('missionModal').style.display = 'none';
-        alert("Yay! You earned " + earnedThisSession + " Poop Points! 💩✨");
+        
+        let msg = sessionPoints >= 0 ? "Great job! You earned " + sessionPoints + " points! 💩✨" 
+                                   : "Oh no! You lost " + Math.abs(sessionPoints) + " points. Do better tomorrow! 🥺";
+        alert(msg);
+        if(chartInstance) initChart();
+    }
+
+    function toggleHistory() {
+        const s = document.getElementById('history-section');
+        s.style.display = (s.style.display === 'block') ? 'none' : 'block';
+        if (s.style.display === 'block') initChart();
+    }
+
+    function initChart() {
+        const ctx = document.getElementById('growthChart').getContext('2d');
+        if (chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: state.history.map(h => h.date),
+                datasets: [{ 
+                    label: 'Poop Points', 
+                    data: state.history.map(h => h.score), 
+                    borderColor: '#ff85a2', 
+                    backgroundColor: 'rgba(255, 133, 162, 0.2)',
+                    fill: true,
+                    tension: 0.4 
+                }]
+            },
+            options: { scales: { y: { beginAtZero: false } } }
+        });
     }
 
     function updateUI() {

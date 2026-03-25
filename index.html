@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>McKayla's Poop Roadmap v1.1.5 💩</title>
+    <title>McKayla's Poop Roadmap v1.1.6 💩</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background-color: #fff5f7; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
+        body { font-family: -apple-system, sans-serif; background-color: #fff5f7; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
         .app-container { width: 90%; max-width: 400px; background: white; padding: 40px 20px; border-radius: 40px; box-shadow: 0 20px 40px rgba(255,149,180,0.15); text-align: center; margin-top: 20px; }
         .score-value { font-size: 5.5rem; font-weight: 900; color: #8b5e3c; margin: 10px 0; }
         .btn { width: 100%; padding: 20px; margin: 12px 0; border: none; border-radius: 20px; font-size: 1.1rem; font-weight: 700; cursor: pointer; }
@@ -26,7 +26,7 @@
 <body>
 
 <div class="app-container">
-    <div style="color: #ff748d; font-weight: 700; text-transform: uppercase;">Daily Tracker</div>
+    <div style="color: #ff748d; font-weight: 700;">DAILY GROWTH TRACKER</div>
     <div style="font-size: 1.2rem; color: #8d766b;">McKayla's Poop Points 💩</div>
     <div id="poop-score" class="score-value">--</div>
     
@@ -36,7 +36,7 @@
     <div id="history-section" style="display:none; margin-top:20px; width:100%;">
         <canvas id="growthChart"></canvas>
     </div>
-    <div class="version-info">v1.1.5 | Fixed Final Step Bug</div>
+    <div class="version-info">v1.1.6 | Score Logic Fixed</div>
 </div>
 
 <div id="missionModal" class="modal">
@@ -76,7 +76,16 @@
 
     function loadData() {
         db.ref('mckayla_data').on('value', (snapshot) => {
-            if (snapshot.exists()) { state = snapshot.val(); checkDailyGap(); }
+            if (snapshot.exists()) { 
+                const data = snapshot.val();
+                state.score = data.score !== undefined ? data.score : 100;
+                state.didCheckIn = data.didCheckIn || false;
+                state.lastUpdateDay = data.lastUpdateDay || new Date().toDateString();
+                state.history = data.history || [];
+                checkDailyGap();
+            } else {
+                saveData(); // 초기 데이터 생성
+            }
             document.getElementById('poop-score').innerText = state.score;
         });
     }
@@ -86,20 +95,28 @@
         if (today !== state.lastUpdateDay) {
             const lastDate = new Date(state.lastUpdateDay);
             const diffDays = Math.ceil(Math.abs(new Date(today) - lastDate) / (1000 * 60 * 60 * 24));
+            
             if (diffDays >= 1) {
-                for(let i = (state.didCheckIn ? 1 : 0); i < diffDays; i++) {
+                // 어제 체크인 안했으면 30점 감점 (밀린 날짜만큼)
+                let penaltyStart = state.didCheckIn ? 1 : 0;
+                for(let i = penaltyStart; i < diffDays; i++) {
                     state.score -= 30;
                     let mDate = new Date(lastDate); mDate.setDate(lastDate.getDate() + i + 1);
                     state.history.push({ date: mDate.toLocaleDateString('en-US', {month:'short', day:'numeric'}), score: state.score });
                 }
             }
-            state.lastUpdateDay = today; state.didCheckIn = false;
-            db.ref('mckayla_data').set(state);
+            state.lastUpdateDay = today;
+            state.didCheckIn = false;
+            saveData();
         }
     }
 
+    function saveData() {
+        db.ref('mckayla_data').set(state);
+    }
+
     function startMission() {
-        if (state.didCheckIn) return alert("Already collected today! See you tomorrow! ✨");
+        if (state.didCheckIn) return alert("All done today! ✨");
         currentIdx = 0; sessionPoints = 0;
         updateModal();
         document.getElementById('missionModal').style.display = 'flex';
@@ -113,19 +130,14 @@
     function processAnswer(isYes) {
         if (isYes) sessionPoints += 10; else sessionPoints -= 10;
         currentIdx++;
-        
-        if (currentIdx < questions.length) {
-            updateModal();
-        } else {
-            finishMission();
-        }
+        if (currentIdx < questions.length) updateModal();
+        else finishMission();
     }
 
     function finishMission() {
-        // 1. 즉시 화면 닫기
         document.getElementById('missionModal').style.display = 'none';
         
-        // 2. 데이터 업데이트
+        // 점수 합산 (감점 포함)
         state.score += sessionPoints;
         state.didCheckIn = true;
         state.history.push({ 
@@ -133,11 +145,10 @@
             score: state.score 
         });
         
-        // 3. 서버 저장 및 알림
-        db.ref('mckayla_data').set(state).then(() => {
-            const msg = sessionPoints >= 0 ? `Yay! +${sessionPoints} points! 💩` : `Oh no! ${sessionPoints} points... 🥺`;
-            alert(msg);
-        });
+        saveData(); // 서버 저장
+        
+        const msg = sessionPoints >= 0 ? `Yay! +${sessionPoints} points! 💩` : `Oh no! ${sessionPoints} points... 🥺`;
+        setTimeout(() => alert(msg), 300);
     }
 
     function toggleHistory() {

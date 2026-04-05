@@ -3,49 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>McKayla's Poop Roadmap v1.1.7 💩</title>
+    <title>McKayla's Poop Roadmap v1.2.3 💩✨</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: -apple-system, sans-serif; background-color: #fff5f7; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; -webkit-font-smoothing: antialiased; }
-        .app-container { width: 90%; max-width: 400px; background: white; padding: 40px 20px; border-radius: 40px; box-shadow: 0 20px 40px rgba(255,149,180,0.15); text-align: center; margin-top: 20px; }
-        .score-value { font-size: 5.5rem; font-weight: 900; color: #8b5e3c; margin: 10px 0; line-height: 1; }
-        .btn { width: 100%; padding: 20px; margin: 12px 0; border: none; border-radius: 20px; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
-        .btn-poop { background: linear-gradient(135deg, #ff748d, #ff9cae); color: white; box-shadow: 0 10px 20px rgba(255, 116, 141, 0.3); }
-        .btn-history { background-color: #fcfcfc; color: #ff748d; border: 2px solid #ffedf1; }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(5px); }
-        .modal-content { background: white; padding: 40px 25px; border-radius: 35px; width: 80%; max-width: 300px; text-align: center; }
-        .choice-btn-group { display: flex; gap: 10px; margin-top: 20px; }
-        .choice-btn { flex: 1; padding: 18px; border: none; border-radius: 18px; font-size: 1rem; font-weight: 700; cursor: pointer; }
+        body { font-family: -apple-system, sans-serif; background-color: #fff5f7; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
+        .app-container { width: 95%; max-width: 400px; background: white; padding: 40px 20px; border-radius: 40px; box-shadow: 0 20px 40px rgba(255,149,180,0.25); text-align: center; margin-top: 20px; border: 4px solid #ffe5ec; }
+        .score-value { font-size: 6rem; font-weight: 900; color: #8b5e3c; margin: 10px 0; line-height: 1; text-shadow: 3px 3px #ffe5ec; }
+        .btn { width: 100%; padding: 22px; margin: 12px 0; border: none; border-radius: 25px; font-size: 1.2rem; font-weight: 800; cursor: pointer; transition: 0.3s; }
+        .btn-poop { background: linear-gradient(135deg, #ff748d, #ffb3c1); color: white; box-shadow: 0 10px 20px rgba(255, 116, 141, 0.4); }
+        .btn-poop:active { transform: scale(0.96); }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,182,193,0.4); justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(8px); }
+        .modal-content { background: white; padding: 40px 25px; border-radius: 40px; width: 85%; max-width: 320px; text-align: center; border: 5px solid #ffedf1; }
+        .choice-btn-group { display: flex; gap: 15px; margin-top: 20px; }
+        .choice-btn { flex: 1; padding: 20px; border: none; border-radius: 20px; font-size: 1.1rem; font-weight: 800; cursor: pointer; }
         .btn-yes { background: #ff748d; color: white; }
-        .btn-no { background: #f1f3f5; color: #868e96; }
-        .version-info { font-size: 0.7rem; color: #ddd; margin-top: 20px; }
+        .btn-no { background: #f1f3f5; color: #adb5bd; }
+        .input-poop { width: 100%; padding: 15px; margin: 15px 0; border-radius: 15px; border: 3px solid #ffb3c1; font-size: 1.8rem; text-align: center; color: #8b5e3c; outline: none; }
+        .reset-btn { font-size: 0.75rem; color: #ffccd5; margin-top: 30px; background: none; border: none; text-decoration: underline; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="app-container">
-    <div style="color: #ff748d; font-weight: 700;">DAILY GROWTH TRACKER</div>
-    <div style="font-size: 1.2rem; color: #8d766b;">McKayla's Poop Points 💩</div>
+    <div style="color: #ff748d; font-weight: 900; font-size: 1.2rem; letter-spacing: 1px;">🦄 DAILY POOP CHECK 🌈</div>
+    <div style="font-size: 1rem; color: #8d766b; margin-top: 8px;">McKayla's Poop Points 💩✨</div>
     <div id="poop-score" class="score-value">--</div>
     
-    <button class="btn btn-poop" onclick="startMission()">Collect Poop</button>
-    <button class="btn btn-history" onclick="toggleHistory()">Growth Graph 📈</button>
+    <button class="btn btn-poop" onclick="startMission()">Collect Poop! 🍭🍦</button>
+    <button class="btn" style="background:#fff; color:#ff748d; border:3px solid #ffedf1; border-radius:25px;" onclick="toggleHistory()">Growth Graph 📈✨</button>
     
     <div id="history-section" style="display:none; margin-top:20px; width:100%;">
         <canvas id="growthChart"></canvas>
     </div>
-    <div class="version-info">v1.1.7 | No-Loop Fix</div>
+    <button class="reset-btn" onclick="resetTo210()">Admin: Reset to 210 🔄</button>
 </div>
 
 <div id="missionModal" class="modal">
     <div class="modal-content">
-        <h2 id="modal-title" style="color:#ff748d;"></h2>
-        <p id="question-display" style="font-size:1.1rem; color:#555; margin-bottom:20px;"></p>
-        <div class="choice-btn-group">
-            <button class="choice-btn btn-yes" onclick="processAnswer(true)">Yes! 🎉</button>
-            <button class="choice-btn btn-no" onclick="processAnswer(false)">Not yet</button>
+        <h2 id="modal-title" style="color:#ff748d; font-size: 1.5rem;">Step</h2>
+        <p id="question-display" style="font-size:1.3rem; color:#555; font-weight:700; line-height:1.4;"></p>
+        
+        <div id="binary-ui" class="choice-btn-group">
+            <button class="choice-btn btn-yes" onclick="handleBinary(true)">Yes! 💖</button>
+            <button class="choice-btn btn-no" onclick="handleBinary(false)">No 💦</button>
+        </div>
+
+        <div id="number-ui" style="display:none;">
+            <input type="number" id="poop-count" class="input-poop" placeholder="0">
+            <button class="btn btn-poop" style="padding:15px;" onclick="handleNumber()">Next! 🎀🌟</button>
         </div>
     </div>
 </div>
@@ -64,28 +71,25 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let state = { score: 100, didCheckIn: false, lastUpdateDay: new Date().toDateString(), history: [] };
-    const questions = [
-        { title: "Algebra 1 ✏️", q: "Did you finish your khan academy algebra 1 today?" },
-        { title: "Reading! 📚", q: "Did you finish your khan academy 7th grade reading and vocab?" },
-        { title: "Move it! 💃", q: "Did you do your fun exercise today?" }
+    let state = { score: 210, didCheckIn: false, lastUpdateDay: new Date().toDateString(), history: [] };
+    
+    const flow = [
+        { id: 'math_m', q: "Did you do math mastery challenge? ✏️", type: "binary", p: 10 },
+        { id: 'math_s', q: "How many math new sets did you do today? 🔢", type: "number", p: 10 },
+        { id: 'ela_s', q: "How many new ELA sets did you do today? 📚", type: "number", p: 10 },
+        { id: 'exercise', q: "Did you do fun exercise today? 💃", type: "binary", p: 10 }
     ];
+
     let currentIdx = 0;
     let sessionPoints = 0;
-    let chartInstance = null;
 
     async function loadData() {
-        // on 대신 once를 써서 무한 루프 차단
-        const snapshot = await db.ref('mckayla_data').once('value');
+        const snapshot = await db.ref('mckayla_v123').once('value');
         if (snapshot.exists()) {
-            const data = snapshot.val();
-            state.score = (data.score === undefined || data.score < 0) ? 100 : data.score;
-            state.didCheckIn = data.didCheckIn || false;
-            state.lastUpdateDay = data.lastUpdateDay || new Date().toDateString();
-            state.history = data.history || [];
+            state = snapshot.val();
             checkDailyGap();
         } else {
-            saveData();
+            resetTo210(true);
         }
         updateUI();
     }
@@ -94,15 +98,9 @@
         const today = new Date().toDateString();
         if (today !== state.lastUpdateDay) {
             const lastDate = new Date(state.lastUpdateDay);
-            const diffDays = Math.ceil(Math.abs(new Date(today) - lastDate) / (1000 * 60 * 60 * 24));
-            
-            if (diffDays >= 1) {
-                let penaltyStart = state.didCheckIn ? 1 : 0;
-                for(let i = penaltyStart; i < diffDays; i++) {
-                    state.score -= 30;
-                    let mDate = new Date(lastDate); mDate.setDate(lastDate.getDate() + i + 1);
-                    state.history.push({ date: mDate.toLocaleDateString('en-US', {month:'short', day:'numeric'}), score: state.score });
-                }
+            const diffDays = Math.floor(Math.abs(new Date(today) - lastDate) / (1000 * 60 * 60 * 24));
+            if (diffDays >= 1 && !state.didCheckIn) {
+                state.score -= 40; // 깜빡하면 40점 차감
             }
             state.lastUpdateDay = today;
             state.didCheckIn = false;
@@ -110,8 +108,62 @@
         }
     }
 
+    function startMission() {
+        if (state.didCheckIn) return alert("You already collected today's poop points! 💩💖");
+        currentIdx = 0; sessionPoints = 0;
+        showStep();
+        document.getElementById('missionModal').style.display = 'flex';
+    }
+
+    function showStep() {
+        const item = flow[currentIdx];
+        document.getElementById('modal-title').innerText = `Step ${currentIdx + 1}`;
+        document.getElementById('question-display').innerText = item.q;
+        document.getElementById('binary-ui').style.display = item.type === "binary" ? "flex" : "none";
+        document.getElementById('number-ui').style.display = item.type === "number" ? "block" : "none";
+        if(item.type === "number") document.getElementById('poop-count').value = "";
+    }
+
+    function handleBinary(isYes) {
+        const item = flow[currentIdx];
+        if (isYes) {
+            sessionPoints += 10;
+            currentIdx++;
+        } else {
+            // Mastery(첫질문) No면 바로 점프해서 다음 질문(ELA)으로
+            if (item.id === 'math_m') {
+                currentIdx = 2; // ELA 질문으로 점프
+            } else {
+                currentIdx++;
+            }
+        }
+        if (currentIdx < flow.length) showStep(); else finish();
+    }
+
+    function handleNumber() {
+        const count = parseInt(document.getElementById('poop-count').value) || 0;
+        sessionPoints += (count * 10);
+        currentIdx++;
+        if (currentIdx < flow.length) showStep(); else finish();
+    }
+
+    function finish() {
+        state.score += sessionPoints;
+        state.didCheckIn = true;
+        state.history.push({ date: new Date().toLocaleDateString('en-US', {month:'short', day:'numeric'}), score: state.score });
+        saveData();
+        document.getElementById('missionModal').style.display = 'none';
+        alert(`Finished! You earned ${sessionPoints} points! 💩✨🍭`);
+    }
+
+    function resetTo210(isInit = false) {
+        if(!isInit && !confirm("Reset McKayla's points to 210?")) return;
+        state = { score: 210, didCheckIn: false, lastUpdateDay: new Date().toDateString(), history: [{date: 'Start', score: 210}] };
+        saveData();
+    }
+
     function saveData() {
-        db.ref('mckayla_data').set(state);
+        db.ref('mckayla_v123').set(state);
         updateUI();
     }
 
@@ -119,54 +171,20 @@
         document.getElementById('poop-score').innerText = state.score;
     }
 
-    function startMission() {
-        if (state.didCheckIn) return alert("Already collected today! ✨");
-        currentIdx = 0; sessionPoints = 0;
-        updateModal();
-        document.getElementById('missionModal').style.display = 'flex';
-    }
-
-    function updateModal() {
-        document.getElementById('modal-title').innerText = questions[currentIdx].title;
-        document.getElementById('question-display').innerText = questions[currentIdx].q;
-    }
-
-    function processAnswer(isYes) {
-        if (isYes) sessionPoints += 10; else sessionPoints -= 10;
-        currentIdx++;
-        if (currentIdx < questions.length) updateModal();
-        else finishMission();
-    }
-
-    function finishMission() {
-        document.getElementById('missionModal').style.display = 'none';
-        state.score += sessionPoints;
-        state.didCheckIn = true;
-        state.history.push({ date: new Date().toLocaleDateString('en-US', {month:'short', day:'numeric'}), score: state.score });
-        saveData();
-        
-        const msg = sessionPoints >= 0 ? `Yay! +${sessionPoints} points! 💩` : `Oh no! ${sessionPoints} points... 🥺`;
-        setTimeout(() => alert(msg), 300);
-    }
-
     function toggleHistory() {
         const s = document.getElementById('history-section');
         s.style.display = (s.style.display === 'none') ? 'block' : 'none';
-        if (s.style.display === 'block') initChart();
+        if (s.style.display === 'block') {
+            const ctx = document.getElementById('growthChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: state.history.map(h => h.date),
+                    datasets: [{ label: 'Poop Points', data: state.history.map(h => h.score), borderColor: '#ff748d', tension: 0.4, fill: true, backgroundColor: 'rgba(255,116,141,0.1)' }]
+                }
+            });
+        }
     }
-
-    function initChart() {
-        const ctx = document.getElementById('growthChart').getContext('2d');
-        if (chartInstance) chartInstance.destroy();
-        chartInstance = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: state.history.map(h => h.date),
-                datasets: [{ label: 'Poop Points', data: state.history.map(h => h.score), borderColor: '#ff748d', tension: 0.4 }]
-            }
-        });
-    }
-
     window.onload = loadData;
 </script>
 </body>
